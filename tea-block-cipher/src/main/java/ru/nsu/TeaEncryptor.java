@@ -45,7 +45,7 @@ public class TeaEncryptor {
                 fos.write(processedBlock);
             }
 
-            // Создаем новый блок, где хранится
+            // Создаем новый блок, где хранится информация о дополненных байтах для кратности
             int paddingLength = totalBytesRead % BLOCK_SIZE == 0 ? 0 : BLOCK_SIZE - totalBytesRead % BLOCK_SIZE;
             byte[] paddingBlock = new byte[BLOCK_SIZE];
             paddingBlock[BLOCK_SIZE - 1] = (byte) paddingLength;
@@ -75,6 +75,7 @@ public class TeaEncryptor {
                 fos.write(processedBlock);
             }
 
+            // Удаляем блок, где хранится информация о дополненных байтах для кратности, и убираем эти доп байты
             assert lastBlock != null;
             int paddingLength = lastBlock[7];
             long currentLength = fos.getChannel().position();
@@ -86,20 +87,18 @@ public class TeaEncryptor {
     /**
      * Дополняет блок данных до 8 байт, если блок оказался короче.
      * Метод принимает исходный массив байтов и копирует его содержимое в новый массив, дополняя
-     * недостающие байты значением, соответствующим количеству недостающих байтов.
+     * недостающие байты значением 0x01 для достижения нужной длины.
      *
      * @param buffer    исходный массив байтов, который может быть короче 8 байт
      * @param bytesRead количество байтов, фактически прочитанных в блоке
      * @return новый массив байтов длиной 8, содержащий исходные данные и дополненные байты
      */
     private static byte[] addMissingBytes(byte[] buffer, int bytesRead) {
-        byte[] padded = new byte[BLOCK_SIZE];
+        byte[] padded = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
         System.arraycopy(buffer, 0, padded, 0, bytesRead);
-        for (int i = bytesRead; i < BLOCK_SIZE; i++) {
-            padded[i] = 0x01;
-        }
         return padded;
     }
+
 
     /**
      * Метод для шифрования одного блока текста (8 байт).
