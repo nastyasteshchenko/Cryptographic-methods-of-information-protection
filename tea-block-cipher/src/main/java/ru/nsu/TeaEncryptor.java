@@ -16,6 +16,8 @@ public class TeaEncryptor {
     private final static int DELTA = 0x9E3779B9;
     private final static int ROUNDS = 32;
     private final static int START_SUM_FOR_DECRYPTION = 0xC6EF3720;
+    private static final int BLOCK_SIZE = 8;
+
 
     /**
      * Метод для шифрования файла.
@@ -30,16 +32,24 @@ public class TeaEncryptor {
         try (FileInputStream fis = new FileInputStream(inputFile);
              FileOutputStream fos = new FileOutputStream(outputFile)) {
 
-            byte[] buffer = new byte[8];
+            byte[] buffer = new byte[BLOCK_SIZE];
             int bytesRead;
+            int totalBytesRead = 0;
 
             while ((bytesRead = fis.read(buffer)) != -1) {
-                if (bytesRead < 8) {
+                totalBytesRead += bytesRead;
+                if (bytesRead < BLOCK_SIZE) {
                     buffer = addMissingBytes(buffer, bytesRead);
                 }
                 byte[] processedBlock = encryptTextBlock(key, buffer);
                 fos.write(processedBlock);
             }
+
+            // Создаем новый блок, где хранится
+            int paddingLength = totalBytesRead % BLOCK_SIZE == 0 ? 0 : BLOCK_SIZE - totalBytesRead % BLOCK_SIZE;
+            byte[] paddingBlock = new byte[BLOCK_SIZE];
+            paddingBlock[BLOCK_SIZE - 1] = (byte) paddingLength;
+            fos.write(encryptTextBlock(key, paddingBlock));
         }
     }
 
@@ -56,31 +66,38 @@ public class TeaEncryptor {
         try (FileInputStream fis = new FileInputStream(inputFile);
              FileOutputStream fos = new FileOutputStream(outputFile)) {
 
-            byte[] buffer = new byte[8];
-            int bytesRead;
+            byte[] buffer = new byte[BLOCK_SIZE];
+            byte[] lastBlock = null;
 
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                if (bytesRead < 8) {
-                    buffer = addMissingBytes(buffer, bytesRead);
-                }
+            while (fis.read(buffer) != -1) {
                 byte[] processedBlock = decryptTextBlock(key, buffer);
+                lastBlock = processedBlock;
                 fos.write(processedBlock);
             }
+
+            assert lastBlock != null;
+            int paddingLength = lastBlock[7];
+            long currentLength = fos.getChannel().position();
+            long targetLength = currentLength - paddingLength - BLOCK_SIZE;
+            fos.getChannel().truncate(targetLength);
         }
     }
 
     /**
      * Дополняет блок данных до 8 байт, если блок оказался короче.
      * Метод принимает исходный массив байтов и копирует его содержимое в новый массив, дополняя
-     * недостающие байты значением 0x01 для достижения нужной длины.
+     * недостающие байты значением, соответствующим количеству недостающих байтов.
      *
      * @param buffer    исходный массив байтов, который может быть короче 8 байт
      * @param bytesRead количество байтов, фактически прочитанных в блоке
      * @return новый массив байтов длиной 8, содержащий исходные данные и дополненные байты
      */
     private static byte[] addMissingBytes(byte[] buffer, int bytesRead) {
-        byte[] padded = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+        byte[] padded = new byte[BLOCK_SIZE];
         System.arraycopy(buffer, 0, padded, 0, bytesRead);
+        for (int i = bytesRead; i < BLOCK_SIZE; i++) {
+            padded[i] = 0x01;
+        }
         return padded;
     }
 
