@@ -4,6 +4,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class TeaEncryptor {
     private final static int DELTA = 0x9E3779B9;
@@ -31,6 +33,7 @@ public class TeaEncryptor {
     }
 
     public void encryptFile(String inputFile, String outputFile, byte[] key) throws IOException {
+        Files.createFile(Path.of(outputFile));
         try (FileInputStream fis = new FileInputStream(inputFile);
              FileOutputStream fos = new FileOutputStream(outputFile)) {
 

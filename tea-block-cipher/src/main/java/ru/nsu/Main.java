@@ -14,10 +14,9 @@ public class Main {
         System.out.println(new String(encrypted));
         System.out.println(new String(decrypted));
         teaEncryptor.encryptFile(Main.class.getClassLoader().getResource("./text1.txt").getFile(),
-                Main.class.getClassLoader().getResource("./encrypted_text1.txt").getFile(), key);
+               "./encrypted_text1.txt", key);
         teaEncryptor.decryptFile(
-                Main.class.getClassLoader().getResource("./encrypted_text1.txt").getFile(),
-                Main.class.getClassLoader().getResource("./decrypted_text1.txt").getFile(), key);
-//        System.out.println("Hello world!");
+                "./encrypted_text1.txt",
+               "./decrypted_text1.txt", key);
     }
 }
