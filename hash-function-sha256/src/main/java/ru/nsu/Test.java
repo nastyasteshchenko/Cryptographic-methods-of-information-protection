@@ -32,6 +32,5 @@ public class Test {
         System.out.println("Теперь вызовем хеш функцию с теми же данными.");
         hashFuncResult = sha256HashGenerator.hash(text, salt);
         System.out.println("Получаем следующий результат хеш функции: " + hashFuncResult);
-
     }
 }
